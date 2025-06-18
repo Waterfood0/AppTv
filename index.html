@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Онлайн ТВ каналы</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0; padding: 0; background: #111; color: #eee;
+  }
+  h1 {
+    text-align: center;
+    padding: 20px 0;
+    background: #222;
+    margin: 0;
+  }
+  #channel-list {
+    display: flex;
+    flex-direction: column;
+    max-width: 480px;
+    margin: 20px auto;
+    gap: 15px;
+    padding: 0 10px;
+  }
+  .channel {
+    background: #222;
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+    font-size: 18px;
+  }
+  .channel:hover {
+    background: #444;
+  }
+  #player-container {
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: black;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  #video-player {
+    width: 100%;
+    max-width: 720px;
+    height: 405px; /* 16:9 */
+    background: black;
+  }
+  #close-btn {
+    margin-top: 10px;
+    background: #e33;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1>Онлайн ТВ каналы</h1>
+
+<div id="channel-list">
+  <div class="channel" data-src="https://cdnottvod1.blsqcdn.com/hls/live/7027730/master.m3u8">ОТР</div>
+  <div class="channel" data-src="https://ntvplus.moscow.rt.ru/ntv-1/playlist.m3u8">НТВ</div>
+  <div class="channel" data-src="https://russia24.rt.ru/live/russia24.m3u8">Россия 24</div>
+  <div class="channel" data-src="https://1tv.online/1tv.m3u8">Первый канал</div>
+  <div class="channel" data-src="https://tvc.ru/live/playlist.m3u8">ТВ Центр</div>
+</div>
+
+<div id="player-container">
+  <video id="video-player" controls autoplay playsinline></video>
+  <button id="close-btn">Закрыть</button>
+</div>
+
+<script>
+  const channelList = document.getElementById('channel-list');
+  const playerContainer = document.getElementById('player-container');
+  const videoPlayer = document.getElementById('video-player');
+  const closeBtn = document.getElementById('close-btn');
+
+  channelList.addEventListener('click', e => {
+    const channel = e.target.closest('.channel');
+    if (!channel) return;
+    const src = channel.dataset.src;
+    if (!src) return;
+
+    videoPlayer.src = src;
+    playerContainer.style.display = 'flex';
+    videoPlayer.play();
+  });
+
+  closeBtn.addEventListener('click', () => {
+    videoPlayer.pause();
+    videoPlayer.src = '';
+    playerContainer.style.display = 'none';
+  });
+</script>
+
+</body>
+</html>
