@@ -107,37 +107,69 @@
   let shownVideos = new Set();
   let nextPageToken = '';
   let isLoading = false;
+  let observers = [];
+
+  // Функция для создания iframe с нужными параметрами
+  function createIframe(videoId) {
+    // Включаем mute=1 для начального автозапуска без звука
+    return `
+      <iframe 
+        src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=0&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0" 
+        allow="autoplay; encrypted-media" 
+        loading="lazy"
+        frameborder="0"
+        allowfullscreen
+        id="iframe_${videoId}"
+      ></iframe>
+    `;
+  }
 
   // Функция для добавления видео на страницу
   function addVideoToFeed(videoId, snippet) {
     const container = document.createElement('div');
     container.className = 'video-container';
     container.title = snippet.title;
+    container.dataset.videoId = videoId;
     container.innerHTML = `
-      <iframe 
-        src="https://www.youtube.com/embed/${videoId}?autoplay=0&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0" 
-        allow="autoplay; encrypted-media" 
-        loading="lazy"
-        ></iframe>
+      ${createIframe(videoId)}
       <div class="title">${snippet.title}</div>
     `;
 
-    // Клик по видео — включить звук и autoplay, добавить класс активного видео
-    container.addEventListener('click', () => {
-      // Остановим все видео
-      document.querySelectorAll('iframe').forEach(f => {
-        f.src = f.src.replace('autoplay=1', 'autoplay=0');
-      });
-
-      // Включим выбранное
-      const iframe = container.querySelector('iframe');
-      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=1&modestbranding=1&playsinline=1&rel=0`;
-
-      // Скроллим к видео
-      container.scrollIntoView({behavior: 'smooth', block: 'center'});
-    });
-
     feed.appendChild(container);
+
+    setupObserver(container);
+  }
+
+  // IntersectionObserver для автозапуска видео с звуком
+  function setupObserver(container) {
+    const iframe = container.querySelector('iframe');
+    if (!iframe) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          playVideo(iframe);
+        } else {
+          pauseVideo(iframe);
+        }
+      });
+    }, { threshold: 0.75 });
+
+    observer.observe(container);
+    observers.push(observer);
+  }
+
+  // Воспроизведение видео с включенным звуком
+  function playVideo(iframe) {
+    // Чтобы проигрывать и включать звук через API YouTube, нужно постить команды
+    iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+    iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+  }
+
+  // Пауза и отключение звука
+  function pauseVideo(iframe) {
+    iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+    iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
   }
 
   // Загрузка видео из API
@@ -203,6 +235,11 @@
   // Стартовая загрузка
   loadMoreVideos();
 
+  // API YouTube требует подключить скрипт для управления плеером через postMessage
+  // Добавим скрипт YouTube API
+  const tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.body.appendChild(tag);
 </script>
 </body>
 </html>
