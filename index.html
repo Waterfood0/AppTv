@@ -1,189 +1,208 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>📺 Russian Shorts</title>
-<style>
-  * {
-    margin: 0; padding: 0; box-sizing: border-box;
-  }
-  body {
-    font-family: 'Arial', sans-serif;
-    background: #000;
-    color: #fff;
-    overflow-x: hidden;
-  }
-  #loader {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 80px; height: 80px;
-    border: 8px solid #330000;
-    border-top: 8px solid #ff0000;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    z-index: 1000;
-  }
-  @keyframes spin {
-    0% {transform: translate(-50%, -50%) rotate(0deg);}
-    100% {transform: translate(-50%, -50%) rotate(360deg);}
-  }
-
-  #feed {
-    max-width: 1000px;
-    margin: 20px auto 100px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 16px;
-  }
-
-  .video-card {
-    background: #111;
-    border-radius: 12px;
-    box-shadow: 0 0 10px #ff0000cc;
-    width: 280px;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .video-card:hover {
-    transform: scale(1.05);
-  }
-
-  .thumbnail {
-    width: 100%;
-    aspect-ratio: 16/9;
-    object-fit: cover;
-  }
-
-  .title {
-    padding: 10px;
-    font-size: 16px;
-    color: #fff;
-    min-height: 48px;
-  }
-
-  #player-container {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: 320px;
-    background: #111;
-    box-shadow: 0 -5px 20px #ff0000cc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 10px;
-    display: none;
-    z-index: 999;
-  }
-  #player-container iframe {
-    width: 90%;
-    height: 100%;
-    border-radius: 12px;
-    border: none;
-  }
-
-  #close-player {
-    position: absolute;
-    top: 10px; right: 20px;
-    background: #ff0000;
-    border: none;
-    color: white;
-    font-size: 18px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-
-  @media(max-width: 600px) {
-    .video-card {
-      width: 90vw;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Russian Shorts — Чёрно-зелёная лента</title>
+  <style>
+    /* Сброс стилей */
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
     }
-  }
-</style>
+    html, body {
+      height: 100%;
+      background-color: #000;
+      color: #00ff00;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow-y: scroll;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    #feed {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+    .video-container {
+      position: relative;
+      background: #111;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #00ff00aa;
+      overflow: hidden;
+      aspect-ratio: 9 / 16;
+      cursor: pointer;
+      transition: box-shadow 0.3s ease;
+    }
+    .video-container:hover {
+      box-shadow: 0 0 18px #00ff00ff;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      border-radius: 12px;
+      pointer-events: none; /* Чтобы не мешали клики по контейнеру */
+    }
+    .title {
+      color: #00ff00;
+      padding: 8px 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      user-select: none;
+      background: #020;
+      border-radius: 0 0 12px 12px;
+      text-align: center;
+      line-height: 1.2em;
+    }
+    #loader {
+      text-align: center;
+      font-size: 1.2rem;
+      color: #00cc00;
+      padding: 20px 0;
+    }
+    /* Кнопка "Загрузить ещё" */
+    #loadMoreBtn {
+      background: #00ff00;
+      color: #000;
+      border: none;
+      border-radius: 20px;
+      padding: 10px 20px;
+      font-weight: 700;
+      cursor: pointer;
+      margin: 15px auto 40px auto;
+      display: block;
+      transition: background 0.3s ease;
+    }
+    #loadMoreBtn:hover {
+      background: #00cc00;
+    }
+    @media (max-width: 640px) {
+      #feed {
+        padding: 10px;
+      }
+      .title {
+        font-size: 0.9rem;
+        padding: 6px 8px;
+      }
+    }
+  </style>
 </head>
 <body>
 
-<div id="loader"></div>
-<div id="feed"></div>
-
-<div id="player-container">
-  <button id="close-player">✖ Закрыть</button>
-  <iframe id="player" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-</div>
+  <div id="feed">
+    <div id="loader">Загрузка русских Shorts...</div>
+  </div>
+  <button id="loadMoreBtn" style="display:none;">Загрузить ещё</button>
 
 <script>
-  const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A';
+  const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A';  // Вставь свой API ключ
   const feed = document.getElementById('feed');
   const loader = document.getElementById('loader');
-  const playerContainer = document.getElementById('player-container');
-  const player = document.getElementById('player');
-  const closePlayerBtn = document.getElementById('close-player');
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
 
-  // Эмуляция "рандомного" pageToken
-  // YouTube API pageTokens — не просто число, но мы просто начнем с разных ключевых слов (чтобы не повторялось)
-  // Здесь просто добавляем число к поисковому запросу для "рандома"
-  const randomStart = 1000 + Math.floor(Math.random() * (100000000 - 1000));
+  let shownVideos = new Set();
+  let nextPageToken = '';
+  let isLoading = false;
 
-  async function loadVideos() {
+  // Функция для добавления видео на страницу
+  function addVideoToFeed(videoId, snippet) {
+    const container = document.createElement('div');
+    container.className = 'video-container';
+    container.title = snippet.title;
+    container.innerHTML = `
+      <iframe 
+        src="https://www.youtube.com/embed/${videoId}?autoplay=0&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0" 
+        allow="autoplay; encrypted-media" 
+        loading="lazy"
+        ></iframe>
+      <div class="title">${snippet.title}</div>
+    `;
+
+    // Клик по видео — включить звук и autoplay, добавить класс активного видео
+    container.addEventListener('click', () => {
+      // Остановим все видео
+      document.querySelectorAll('iframe').forEach(f => {
+        f.src = f.src.replace('autoplay=1', 'autoplay=0');
+      });
+
+      // Включим выбранное
+      const iframe = container.querySelector('iframe');
+      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=1&modestbranding=1&playsinline=1&rel=0`;
+
+      // Скроллим к видео
+      container.scrollIntoView({behavior: 'smooth', block: 'center'});
+    });
+
+    feed.appendChild(container);
+  }
+
+  // Загрузка видео из API
+  async function loadMoreVideos() {
+    if(isLoading) return;
+    isLoading = true;
     loader.style.display = 'block';
+    loadMoreBtn.style.display = 'none';
+
     try {
-      // Для упрощения — меняем q на "shorts russian" + случайное число
-      // чтобы получать разные результаты
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=20&q=shorts+russian+${randomStart}&relevanceLanguage=ru&regionCode=RU&order=date&key=${API_KEY}`);
+      const maxResults = 15;
+      const query = '#shorts russian';
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=${maxResults}&q=${encodeURIComponent(query)}&relevanceLanguage=ru&regionCode=RU&order=date&pageToken=${nextPageToken}&key=${API_KEY}`;
+      const res = await fetch(url);
       const data = await res.json();
+
       loader.style.display = 'none';
 
-      if(!data.items || data.items.length === 0) {
-        feed.innerHTML = '<p style="color:#ff4444; text-align:center; width:100%;">Видео не найдены. Попробуйте обновить страницу.</p>';
+      if (!data.items || data.items.length === 0) {
+        if(feed.children.length === 0) {
+          feed.innerHTML = '<p style="color:#00ff00; text-align:center;">Видео не найдены.</p>';
+        }
+        loadMoreBtn.style.display = 'none';
+        isLoading = false;
         return;
       }
 
-      data.items.forEach(item => {
+      nextPageToken = data.nextPageToken || '';
+
+      let newCount = 0;
+      for(const item of data.items){
         const videoId = item.id.videoId;
-        const title = item.snippet.title;
-        const thumb = item.snippet.thumbnails.medium.url;
+        if(!shownVideos.has(videoId)) {
+          shownVideos.add(videoId);
+          addVideoToFeed(videoId, item.snippet);
+          newCount++;
+        }
+      }
 
-        const card = document.createElement('div');
-        card.className = 'video-card';
-        card.innerHTML = `
-          <img class="thumbnail" src="${thumb}" alt="${title}" loading="lazy" />
-          <div class="title">${title}</div>
-        `;
-        card.addEventListener('click', () => {
-          openPlayer(videoId);
-        });
+      // Показываем кнопку "Загрузить ещё", если есть следующая страница
+      if(nextPageToken && newCount > 0) {
+        loadMoreBtn.style.display = 'block';
+      } else {
+        loadMoreBtn.style.display = 'none';
+      }
 
-        feed.appendChild(card);
-      });
-    } catch (e) {
+      // Если видео не добавились, пробуем загрузить следующую страницу (рекурсивно)
+      if(newCount === 0 && nextPageToken) {
+        await loadMoreVideos();
+      }
+
+    } catch(err) {
       loader.style.display = 'none';
-      feed.innerHTML = `<p style="color:#ff4444; text-align:center; width:100%;">Ошибка загрузки видео.</p>`;
-      console.error(e);
+      feed.innerHTML = '<p style="color:#00ff00; text-align:center;">Ошибка при загрузке видео. Попробуйте обновить страницу.</p>';
+      console.error(err);
+    } finally {
+      isLoading = false;
     }
   }
 
-  function openPlayer(videoId) {
-    player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0`;
-    playerContainer.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  }
+  loadMoreBtn.addEventListener('click', loadMoreVideos);
 
-  function closePlayer() {
-    player.src = '';
-    playerContainer.style.display = 'none';
-    document.body.style.overflow = '';
-  }
+  // Стартовая загрузка
+  loadMoreVideos();
 
-  closePlayerBtn.addEventListener('click', closePlayer);
-
-  loadVideos();
 </script>
-
 </body>
 </html>
