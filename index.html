@@ -1,53 +1,97 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Прямые эфиры ТВ</title>
+  <meta charset="UTF-8" />
+  <title>Shorts Лента</title>
   <style>
-    body { font-family: sans-serif; background: #111; color: white; text-align: center; }
-    #results { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; margin-top: 20px; }
-    .video { width: 300px; cursor: pointer; }
-    iframe { margin-top: 30px; width: 90%; height: 480px; border: none; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0d0d0d;
+      color: #00ff88;
+      text-align: center;
+    }
+    h1 {
+      margin: 20px 0;
+      font-size: 2rem;
+    }
+    #results {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      padding: 20px;
+    }
+    .video {
+      background: #1a1a1a;
+      border-radius: 10px;
+      overflow: hidden;
+      width: 280px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .video:hover {
+      transform: scale(1.05);
+    }
+    .video img {
+      width: 100%;
+    }
+    .video p {
+      margin: 0;
+      padding: 10px;
+      color: #00ff88;
+      font-size: 0.9rem;
+      background-color: #111;
+    }
+    iframe {
+      margin-top: 30px;
+      width: 90%;
+      height: 480px;
+      border: none;
+    }
   </style>
 </head>
 <body>
 
-  <h1>Прямые эфиры ТВ (через YouTube)</h1>
-  <input type="text" id="query" placeholder="Поиск, например: Россия 24" value="Россия 24" />
-  <button onclick="searchLive()">Найти прямой эфир</button>
+  <h1>🔥 Shorts Лента</h1>
 
-  <div id="results"></div>
+  <div id="results">Загрузка...</div>
 
-  <iframe id="player" allowfullscreen></iframe>
+  <iframe id="player" allowfullscreen style="display:none;"></iframe>
 
   <script>
-    const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A'; // ← твой ключ
+    const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A'; // твой ключ
 
-    async function searchLive() {
-      const query = document.getElementById('query').value;
-      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&eventType=live&key=${API_KEY}`;
-      const res = await fetch(url);
+    async function fetchShorts() {
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=shorts&type=video&maxResults=12&key=${API_KEY}`);
       const data = await res.json();
 
-      const results = document.getElementById('results');
-      results.innerHTML = '';
+      const container = document.getElementById('results');
+      container.innerHTML = '';
 
-      data.items.forEach(video => {
-        const div = document.createElement('div');
-        div.className = 'video';
-        div.innerHTML = `
-          <img src="${video.snippet.thumbnails.medium.url}" width="100%" />
-          <p>${video.snippet.title}</p>
+      data.items.forEach(item => {
+        const videoId = item.id.videoId;
+        const title = item.snippet.title;
+        const thumb = item.snippet.thumbnails.medium.url;
+
+        const videoDiv = document.createElement('div');
+        videoDiv.className = 'video';
+        videoDiv.innerHTML = `
+          <img src="${thumb}" />
+          <p>${title}</p>
         `;
-        div.onclick = () => {
-          document.getElementById('player').src = `https://www.youtube.com/embed/${video.id.videoId}?autoplay=1`;
+        videoDiv.onclick = () => {
+          const player = document.getElementById('player');
+          player.style.display = 'block';
+          player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+          window.scrollTo({ top: player.offsetTop, behavior: 'smooth' });
         };
-        results.appendChild(div);
+
+        container.appendChild(videoDiv);
       });
     }
 
-    // Автопоиск при загрузке
-    window.onload = searchLive;
+    fetchShorts();
   </script>
 
 </body>
