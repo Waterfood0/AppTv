@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🔥 Shorts Feed</title>
+  <title>📺 Russian Shorts</title>
   <style>
     * {margin: 0; padding: 0; box-sizing: border-box;}
     html, body {
@@ -21,43 +21,45 @@
     }
 
     .video-container {
+      position: relative;
       height: 100vh;
       scroll-snap-align: start;
-      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     iframe {
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       border: none;
     }
 
     .overlay {
       position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
+      right: 20px;
+      bottom: 80px;
       display: flex;
-      gap: 20px;
-      background: rgba(0,0,0,0.6);
-      padding: 10px 20px;
-      border-radius: 25px;
+      flex-direction: column;
+      gap: 15px;
+      z-index: 10;
     }
 
     .overlay button {
-      background: none;
+      background: rgba(255, 0, 0, 0.8);
       border: none;
-      font-size: 20px;
-      color: red;
+      padding: 10px;
+      border-radius: 50%;
+      color: white;
+      font-size: 18px;
       cursor: pointer;
-      transition: 0.3s;
+      transition: transform 0.2s;
     }
 
     .overlay button:hover {
-      color: #fff;
+      transform: scale(1.2);
+      background: #fff;
+      color: red;
     }
 
     .loader {
@@ -76,7 +78,7 @@
 <body>
 
 <div class="feed" id="feed">
-  <div class="loader" id="loader">Загрузка видео...</div>
+  <div class="loader" id="loader">Загрузка российских Shorts...</div>
 </div>
 
 <script>
@@ -85,17 +87,17 @@ const FEED = document.getElementById('feed');
 
 async function loadVideos() {
   const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&q=shorts&maxResults=10&key=${API_KEY}`
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=10&q=shorts&relevanceLanguage=ru&regionCode=RU&key=${API_KEY}`
   );
   const data = await res.json();
   const videos = data.items.map(item => item.id.videoId);
-  FEED.innerHTML = ''; // очистить
+  FEED.innerHTML = ''; // Очистить загрузку
 
   videos.forEach((id, i) => {
     const container = document.createElement('div');
     container.className = 'video-container';
     container.innerHTML = `
-      <iframe id="v${i}" src="https://www.youtube.com/embed/${id}?autoplay=1&mute=0&controls=0&modestbranding=1&playsinline=1&enablejsapi=1&rel=0&loop=1&playlist=${id}" allow="autoplay; encrypted-media"></iframe>
+      <iframe id="v${i}" src="https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&enablejsapi=1&rel=0&loop=1&playlist=${id}" allow="autoplay; encrypted-media"></iframe>
       <div class="overlay">
         <button onclick="like()">❤️</button>
         <button onclick="replay(${i})">🔁</button>
