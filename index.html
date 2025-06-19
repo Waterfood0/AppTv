@@ -84,6 +84,7 @@
 <script>
 const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A';
 const FEED = document.getElementById('feed');
+let playerIframes = [];
 
 async function loadVideos() {
   const res = await fetch(
@@ -105,7 +106,10 @@ async function loadVideos() {
       </div>
     `;
     FEED.appendChild(container);
+    playerIframes.push(document.getElementById(`v${i}`));
   });
+
+  setupScrollAudioControl();
 }
 
 function like() {
@@ -121,6 +125,26 @@ function replay(index) {
 function copyLink(id) {
   navigator.clipboard.writeText(`https://youtu.be/${id}`);
   alert('🔗 Ссылка скопирована!');
+}
+
+function setupScrollAudioControl() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const iframe = entry.target.querySelector('iframe');
+      if (!iframe) return;
+
+      const iframeWindow = iframe.contentWindow;
+      if (entry.isIntersecting) {
+        iframeWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+        iframeWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+      } else {
+        iframeWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
+        iframeWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+      }
+    });
+  }, { threshold: 0.75 });
+
+  document.querySelectorAll('.video-container').forEach(container => observer.observe(container));
 }
 
 loadVideos();
