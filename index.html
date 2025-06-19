@@ -87,11 +87,16 @@ const FEED = document.getElementById('feed');
 let playerIframes = [];
 
 async function loadVideos() {
+  const randomStart = Math.floor(Math.random() * 50);
   const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=10&q=shorts&relevanceLanguage=ru&regionCode=RU&key=${API_KEY}`
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=10&q=shorts&relevanceLanguage=ru&regionCode=RU&order=date&pageToken=&key=${API_KEY}`
   );
   const data = await res.json();
-  const videos = data.items.map(item => item.id.videoId);
+  let videos = data.items.map(item => item.id.videoId);
+
+  // Рандомизируем порядок видео
+  videos = videos.sort(() => Math.random() - 0.5);
+
   FEED.innerHTML = ''; // Очистить загрузку
 
   videos.forEach((id, i) => {
