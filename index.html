@@ -1,207 +1,182 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Russian Shorts — Чёрно-зелёная лента</title>
-  <style>
-    /* Сброс стилей */
-    * {
-      margin: 0; padding: 0; box-sizing: border-box;
-    }
-    html, body {
-      height: 100%;
-      background-color: #000;
-      color: #00ff00;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      overflow-y: scroll;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    #feed {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 25px;
-    }
-    .video-container {
-      position: relative;
-      background: #111;
-      border-radius: 12px;
-      box-shadow: 0 0 10px #00ff00aa;
-      overflow: hidden;
-      aspect-ratio: 9 / 16;
-      cursor: pointer;
-      transition: box-shadow 0.3s ease;
-    }
-    .video-container:hover {
-      box-shadow: 0 0 18px #00ff00ff;
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
-      border-radius: 12px;
-      pointer-events: none; /* Чтобы не мешали клики по контейнеру */
-    }
-    .title {
-      color: #00ff00;
-      padding: 8px 10px;
-      font-size: 1rem;
-      font-weight: 600;
-      user-select: none;
-      background: #020;
-      border-radius: 0 0 12px 12px;
-      text-align: center;
-      line-height: 1.2em;
-    }
-    #loader {
-      text-align: center;
-      font-size: 1.2rem;
-      color: #00cc00;
-      padding: 20px 0;
-    }
-    /* Кнопка "Загрузить ещё" */
-    #loadMoreBtn {
-      background: #00ff00;
-      color: #000;
-      border: none;
-      border-radius: 20px;
-      padding: 10px 20px;
-      font-weight: 700;
-      cursor: pointer;
-      margin: 15px auto 40px auto;
-      display: block;
-      transition: background 0.3s ease;
-    }
-    #loadMoreBtn:hover {
-      background: #00cc00;
-    }
-    @media (max-width: 640px) {
-      #feed {
-        padding: 10px;
-      }
-      .title {
-        font-size: 0.9rem;
-        padding: 6px 8px;
-      }
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Russian Shorts — TikTok Style</title>
+<style>
+  html, body {
+    margin:0; padding:0; height:100%;
+    background:#000;
+    color:#0f0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+  }
+  #feed {
+    height: 100vh;
+    scroll-snap-type: y mandatory;
+    overflow-y: scroll;
+  }
+  .video-container {
+    height: 100vh;
+    scroll-snap-align: start;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background:#111;
+  }
+  .video-container iframe {
+    width: 100vw;
+    height: 100vh;
+    border: none;
+  }
+  #loader {
+    position: fixed;
+    inset:0;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #0f0;
+    font-size: 1.5rem;
+    z-index: 9999;
+  }
+</style>
 </head>
 <body>
 
-  <div id="feed">
-    <div id="loader">Загрузка русских Shorts...</div>
-  </div>
-  <button id="loadMoreBtn" style="display:none;">Загрузить ещё</button>
+<div id="loader">Загрузка...</div>
+<div id="feed"></div>
 
 <script>
-  const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A';  // Вставь свой API ключ
+  const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A'; // Твой ключ
   const feed = document.getElementById('feed');
   const loader = document.getElementById('loader');
-  const loadMoreBtn = document.getElementById('loadMoreBtn');
 
-  let shownVideos = new Set();
+  let playerMap = new Map(); // videoId -> YT player
+  let videoIds = [];
   let nextPageToken = '';
   let isLoading = false;
+  let shownVideos = new Set();
 
-  // Функция для добавления видео на страницу
-  function addVideoToFeed(videoId, snippet) {
-    const container = document.createElement('div');
-    container.className = 'video-container';
-    container.title = snippet.title;
-    container.innerHTML = `
-      <iframe 
-        src="https://www.youtube.com/embed/${videoId}?autoplay=0&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0" 
-        allow="autoplay; encrypted-media" 
-        loading="lazy"
-        ></iframe>
-      <div class="title">${snippet.title}</div>
-    `;
+  // Загрузка YouTube Iframe API
+  let tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(tag);
 
-    // Клик по видео — включить звук и autoplay, добавить класс активного видео
-    container.addEventListener('click', () => {
-      // Остановим все видео
-      document.querySelectorAll('iframe').forEach(f => {
-        f.src = f.src.replace('autoplay=1', 'autoplay=0');
-      });
-
-      // Включим выбранное
-      const iframe = container.querySelector('iframe');
-      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&controls=1&modestbranding=1&playsinline=1&rel=0`;
-
-      // Скроллим к видео
-      container.scrollIntoView({behavior: 'smooth', block: 'center'});
-    });
-
-    feed.appendChild(container);
-  }
-
-  // Загрузка видео из API
-  async function loadMoreVideos() {
-    if(isLoading) return;
+  // Функция подгрузки видео
+  async function loadVideos() {
+    if (isLoading) return;
     isLoading = true;
-    loader.style.display = 'block';
-    loadMoreBtn.style.display = 'none';
-
     try {
-      const maxResults = 15;
+      const maxResults = 10;
       const query = '#shorts russian';
       const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=${maxResults}&q=${encodeURIComponent(query)}&relevanceLanguage=ru&regionCode=RU&order=date&pageToken=${nextPageToken}&key=${API_KEY}`;
-      const res = await fetch(url);
-      const data = await res.json();
-
-      loader.style.display = 'none';
-
-      if (!data.items || data.items.length === 0) {
-        if(feed.children.length === 0) {
-          feed.innerHTML = '<p style="color:#00ff00; text-align:center;">Видео не найдены.</p>';
-        }
-        loadMoreBtn.style.display = 'none';
-        isLoading = false;
-        return;
-      }
+      let res = await fetch(url);
+      let data = await res.json();
 
       nextPageToken = data.nextPageToken || '';
 
-      let newCount = 0;
-      for(const item of data.items){
-        const videoId = item.id.videoId;
-        if(!shownVideos.has(videoId)) {
-          shownVideos.add(videoId);
-          addVideoToFeed(videoId, item.snippet);
-          newCount++;
+      for (let item of data.items) {
+        let vid = item.id.videoId;
+        if (!shownVideos.has(vid)) {
+          shownVideos.add(vid);
+          videoIds.push(vid);
         }
       }
-
-      // Показываем кнопку "Загрузить ещё", если есть следующая страница
-      if(nextPageToken && newCount > 0) {
-        loadMoreBtn.style.display = 'block';
-      } else {
-        loadMoreBtn.style.display = 'none';
-      }
-
-      // Если видео не добавились, пробуем загрузить следующую страницу (рекурсивно)
-      if(newCount === 0 && nextPageToken) {
-        await loadMoreVideos();
-      }
-
-    } catch(err) {
-      loader.style.display = 'none';
-      feed.innerHTML = '<p style="color:#00ff00; text-align:center;">Ошибка при загрузке видео. Попробуйте обновить страницу.</p>';
-      console.error(err);
+      renderVideos();
+    } catch(e) {
+      console.error(e);
+      alert('Ошибка загрузки видео');
     } finally {
       isLoading = false;
+      loader.style.display = 'none';
     }
   }
 
-  loadMoreBtn.addEventListener('click', loadMoreVideos);
+  // Рендер видео в feed
+  function renderVideos() {
+    for (let vid of videoIds) {
+      if(document.getElementById('player-' + vid)) continue; // уже есть
+      let container = document.createElement('div');
+      container.className = 'video-container';
+      container.id = 'container-' + vid;
+      container.innerHTML = `<div id="player-${vid}"></div>`;
+      feed.appendChild(container);
+      createPlayer(vid);
+    }
+  }
 
-  // Стартовая загрузка
-  loadMoreVideos();
+  // Создаём YouTube player для видео
+  function createPlayer(videoId) {
+    playerMap.set(videoId, new YT.Player('player-' + videoId, {
+      videoId: videoId,
+      playerVars: {
+        'autoplay': 0,
+        'controls': 0,
+        'mute': 0,
+        'modestbranding': 1,
+        'playsinline': 1,
+        'rel': 0,
+        'showinfo': 0,
+        'loop': 1,
+        'playlist': videoId
+      },
+      events: {
+        'onReady': onPlayerReady,
+        'onStateChange': onPlayerStateChange
+      }
+    }));
+  }
+
+  // При готовности плеера — пока не включаем
+  function onPlayerReady(event) {
+    // Все видео на паузе и звук выключен
+    event.target.pauseVideo();
+    event.target.mute();
+  }
+
+  // Отслеживаем смену состояния видео
+  function onPlayerStateChange(event) {
+    // можно добавить если надо
+  }
+
+  // Управляем воспроизведением и звуком в зависимости от видимости
+  function handleScroll() {
+    let containers = document.querySelectorAll('.video-container');
+    let viewportHeight = window.innerHeight;
+
+    containers.forEach(container => {
+      let rect = container.getBoundingClientRect();
+      let videoId = container.id.replace('container-', '');
+      let player = playerMap.get(videoId);
+      if (!player) return;
+
+      // Если видео почти полностью в зоне видимости (вертикальный центр)
+      if(rect.top < viewportHeight/4 && rect.bottom > viewportHeight*3/4){
+        player.playVideo();
+        player.unMute();
+      } else {
+        player.pauseVideo();
+        player.mute();
+      }
+    });
+
+    // Если подгрузка почти у конца, грузим ещё
+    if(feed.scrollHeight - feed.scrollTop - viewportHeight < viewportHeight*2) {
+      loadVideos();
+    }
+  }
+
+  // Ждём загрузки Iframe API
+  function onYouTubeIframeAPIReady() {
+    loadVideos();
+    feed.addEventListener('scroll', handleScroll);
+  }
+
+  // Проброс для YouTube API
+  window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
 
 </script>
 </body>
