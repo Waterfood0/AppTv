@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Russian Shorts — Чёрно-зелёная лента</title>
   <style>
-    /* Сброс стилей */
-    * {
-      margin: 0; padding: 0; box-sizing: border-box;
-    }
+    /* Твои стили как в примере выше */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       height: 100%;
       background-color: #000;
@@ -45,7 +43,7 @@
       border: none;
       display: block;
       border-radius: 12px;
-      pointer-events: none; /* Чтобы не мешали клики по контейнеру */
+      pointer-events: none;
     }
     .title {
       color: #00ff00;
@@ -64,7 +62,6 @@
       color: #00cc00;
       padding: 20px 0;
     }
-    /* Кнопка "Загрузить ещё" */
     #loadMoreBtn {
       background: #00ff00;
       color: #000;
@@ -81,13 +78,8 @@
       background: #00cc00;
     }
     @media (max-width: 640px) {
-      #feed {
-        padding: 10px;
-      }
-      .title {
-        font-size: 0.9rem;
-        padding: 6px 8px;
-      }
+      #feed { padding: 10px; }
+      .title { font-size: 0.9rem; padding: 6px 8px; }
     }
   </style>
 </head>
@@ -104,14 +96,16 @@
   const loader = document.getElementById('loader');
   const loadMoreBtn = document.getElementById('loadMoreBtn');
 
-  let shownVideos = new Set();
+  // Загружаем из localStorage список просмотренных видео
+  let shownVideos = new Set(JSON.parse(localStorage.getItem('shownVideos') || '[]'));
   let nextPageToken = '';
   let isLoading = false;
-  let observers = [];
 
-  // Функция для создания iframe с нужными параметрами
+  function saveShownVideos() {
+    localStorage.setItem('shownVideos', JSON.stringify(Array.from(shownVideos)));
+  }
+
   function createIframe(videoId) {
-    // Включаем mute=1 для начального автозапуска без звука
     return `
       <iframe 
         src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=0&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0" 
@@ -124,7 +118,6 @@
     `;
   }
 
-  // Функция для добавления видео на страницу
   function addVideoToFeed(videoId, snippet) {
     const container = document.createElement('div');
     container.className = 'video-container';
@@ -136,11 +129,10 @@
     `;
 
     feed.appendChild(container);
-
     setupObserver(container);
   }
 
-  // IntersectionObserver для автозапуска видео с звуком
+  let observers = [];
   function setupObserver(container) {
     const iframe = container.querySelector('iframe');
     if (!iframe) return;
@@ -159,22 +151,18 @@
     observers.push(observer);
   }
 
-  // Воспроизведение видео с включенным звуком
   function playVideo(iframe) {
-    // Чтобы проигрывать и включать звук через API YouTube, нужно постить команды
     iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
     iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
   }
 
-  // Пауза и отключение звука
   function pauseVideo(iframe) {
     iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
     iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
   }
 
-  // Загрузка видео из API
   async function loadMoreVideos() {
-    if(isLoading) return;
+    if (isLoading) return;
     isLoading = true;
     loader.style.display = 'block';
     loadMoreBtn.style.display = 'none';
@@ -209,14 +197,14 @@
         }
       }
 
-      // Показываем кнопку "Загрузить ещё", если есть следующая страница
+      saveShownVideos();
+
       if(nextPageToken && newCount > 0) {
         loadMoreBtn.style.display = 'block';
       } else {
         loadMoreBtn.style.display = 'none';
       }
 
-      // Если видео не добавились, пробуем загрузить следующую страницу (рекурсивно)
       if(newCount === 0 && nextPageToken) {
         await loadMoreVideos();
       }
@@ -232,11 +220,8 @@
 
   loadMoreBtn.addEventListener('click', loadMoreVideos);
 
-  // Стартовая загрузка
   loadMoreVideos();
 
-  // API YouTube требует подключить скрипт для управления плеером через postMessage
-  // Добавим скрипт YouTube API
   const tag = document.createElement('script');
   tag.src = "https://www.youtube.com/iframe_api";
   document.body.appendChild(tag);
