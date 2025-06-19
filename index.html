@@ -1,32 +1,31 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Shorts Лента</title>
   <style>
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background-color: #0d0d0d;
+      background: #0d0d0d;
       color: #00ff88;
-      text-align: center;
     }
     h1 {
+      text-align: center;
       margin: 20px 0;
-      font-size: 2rem;
     }
     #results {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 1rem;
-      padding: 20px;
+      padding: 10px;
     }
     .video {
       background: #1a1a1a;
       border-radius: 10px;
       overflow: hidden;
-      width: 280px;
+      width: 300px;
       cursor: pointer;
       transition: transform 0.2s ease;
     }
@@ -43,53 +42,59 @@
       font-size: 0.9rem;
       background-color: #111;
     }
-    iframe {
-      margin-top: 30px;
-      width: 90%;
-      height: 480px;
-      border: none;
-    }
   </style>
 </head>
 <body>
 
   <h1>🔥 Shorts Лента</h1>
-
   <div id="results">Загрузка...</div>
-
-  <iframe id="player" allowfullscreen style="display:none;"></iframe>
 
   <script>
     const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A'; // твой ключ
+    let nextPageToken = '';
+    let isLoading = false;
 
     async function fetchShorts() {
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=shorts&type=video&maxResults=12&key=${API_KEY}`);
+      if (isLoading) return;
+      isLoading = true;
+
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=shorts&type=video&maxResults=12&key=${API_KEY}&pageToken=${nextPageToken}`;
+      const res = await fetch(url);
       const data = await res.json();
 
+      nextPageToken = data.nextPageToken || '';
       const container = document.getElementById('results');
-      container.innerHTML = '';
+      if (!data.items.length) {
+        container.innerHTML += '<p style="color: gray">Больше нет видео.</p>';
+        return;
+      }
 
       data.items.forEach(item => {
         const videoId = item.id.videoId;
         const title = item.snippet.title;
         const thumb = item.snippet.thumbnails.medium.url;
 
-        const videoDiv = document.createElement('div');
-        videoDiv.className = 'video';
-        videoDiv.innerHTML = `
+        const div = document.createElement('div');
+        div.className = 'video';
+        div.innerHTML = `
           <img src="${thumb}" />
           <p>${title}</p>
         `;
-        videoDiv.onclick = () => {
-          const player = document.getElementById('player');
-          player.style.display = 'block';
-          player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-          window.scrollTo({ top: player.offsetTop, behavior: 'smooth' });
+        div.onclick = () => {
+          window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
         };
-
-        container.appendChild(videoDiv);
+        container.appendChild(div);
       });
+
+      isLoading = false;
     }
+
+    // Автозагрузка при прокрутке вниз
+    window.addEventListener('scroll', () => {
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+        fetchShorts();
+      }
+    });
 
     fetchShorts();
   </script>
