@@ -1,103 +1,85 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Shorts Лента</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #0d0d0d;
-      color: #00ff88;
-    }
-    h1 {
-      text-align: center;
-      margin: 20px 0;
-    }
-    #results {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 1rem;
-      padding: 10px;
-    }
-    .video {
-      background: #1a1a1a;
-      border-radius: 10px;
-      overflow: hidden;
-      width: 300px;
-      cursor: pointer;
-      transition: transform 0.2s ease;
-    }
-    .video:hover {
-      transform: scale(1.05);
-    }
-    .video img {
-      width: 100%;
-    }
-    .video p {
-      margin: 0;
-      padding: 10px;
-      color: #00ff88;
-      font-size: 0.9rem;
-      background-color: #111;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shorts Лента</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    background: #0d0d0d;
+    color: #00ff88;
+    font-family: Arial, sans-serif;
+    overflow-x: hidden;
+  }
+  .shorts-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .short {
+    width: 100%;
+    max-width: 400px;
+    height: 100vh;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 10px;
+  }
+  h1 {
+    text-align: center;
+    padding: 15px 0;
+    margin: 0;
+    background: #111;
+    color: #00ff88;
+  }
+</style>
 </head>
 <body>
 
-  <h1>🔥 Shorts Лента</h1>
-  <div id="results">Загрузка...</div>
+<h1>🔥 Авто Shorts Лента</h1>
+<div id="shorts" class="shorts-container"></div>
 
-  <script>
-    const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A'; // твой ключ
-    let nextPageToken = '';
-    let isLoading = false;
+<script>
+const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A'; // твой ключ
+const maxResults = 5; // сколько видео за раз
+let nextPageToken = '';
+const container = document.getElementById('shorts');
 
-    async function fetchShorts() {
-      if (isLoading) return;
-      isLoading = true;
+async function loadShorts() {
+  let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=shorts&maxResults=${maxResults}&key=${API_KEY}`;
+  if (nextPageToken) {
+    url += `&pageToken=${nextPageToken}`;
+  }
+  const res = await fetch(url);
+  const data = await res.json();
+  nextPageToken = data.nextPageToken;
 
-      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=shorts&type=video&maxResults=12&key=${API_KEY}&pageToken=${nextPageToken}`;
-      const res = await fetch(url);
-      const data = await res.json();
+  data.items.forEach(item => {
+    const videoId = item.id.videoId;
+    const shortDiv = document.createElement('div');
+    shortDiv.className = 'short';
+    shortDiv.innerHTML = `
+      <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=0&mute=1&playsinline=1&modestbranding=1&rel=0&loop=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    `;
+    container.appendChild(shortDiv);
+  });
+}
 
-      nextPageToken = data.nextPageToken || '';
-      const container = document.getElementById('results');
-      if (!data.items.length) {
-        container.innerHTML += '<p style="color: gray">Больше нет видео.</p>';
-        return;
-      }
+// Загрузка новых видео при прокрутке вниз
+window.addEventListener('scroll', () => {
+  if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
+    loadShorts();
+  }
+});
 
-      data.items.forEach(item => {
-        const videoId = item.id.videoId;
-        const title = item.snippet.title;
-        const thumb = item.snippet.thumbnails.medium.url;
-
-        const div = document.createElement('div');
-        div.className = 'video';
-        div.innerHTML = `
-          <img src="${thumb}" />
-          <p>${title}</p>
-        `;
-        div.onclick = () => {
-          window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
-        };
-        container.appendChild(div);
-      });
-
-      isLoading = false;
-    }
-
-    // Автозагрузка при прокрутке вниз
-    window.addEventListener('scroll', () => {
-      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
-        fetchShorts();
-      }
-    });
-
-    fetchShorts();
-  </script>
+// Первая загрузка
+loadShorts();
+</script>
 
 </body>
 </html>
