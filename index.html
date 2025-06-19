@@ -2,41 +2,53 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Мир ТВ — Онлайн трансляция</title>
+  <title>Прямые эфиры ТВ</title>
   <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: black;
-      color: white;
-      display: flex;
-      flex-direction: column;
-    }
-    header {
-      background: #222;
-      color: white;
-      padding: 15px;
-      text-align: center;
-      font-size: 24px;
-    }
-    video {
-      flex-grow: 1;
-      width: 100%;
-      height: 100%;
-      background: black;
-    }
+    body { font-family: sans-serif; background: #111; color: white; text-align: center; }
+    #results { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; margin-top: 20px; }
+    .video { width: 300px; cursor: pointer; }
+    iframe { margin-top: 30px; width: 90%; height: 480px; border: none; }
   </style>
 </head>
 <body>
 
-<header>Мир ТВ — Онлайн трансляция</header>
+  <h1>Прямые эфиры ТВ (через YouTube)</h1>
+  <input type="text" id="query" placeholder="Поиск, например: Россия 24" value="Россия 24" />
+  <button onclick="searchLive()">Найти прямой эфир</button>
 
-<video id="videoPlayer" controls autoplay playsinline>
-  <source src="http://hls.mirtv.cdnvideo.ru/mirtv-parampublish/mirtv_2500/playlist.m3u8" type="application/x-mpegURL">
-  Ваш браузер не поддерживает воспроизведение видео.
-</video>
+  <div id="results"></div>
+
+  <iframe id="player" allowfullscreen></iframe>
+
+  <script>
+    const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A'; // ← твой ключ
+
+    async function searchLive() {
+      const query = document.getElementById('query').value;
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&eventType=live&key=${API_KEY}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      const results = document.getElementById('results');
+      results.innerHTML = '';
+
+      data.items.forEach(video => {
+        const div = document.createElement('div');
+        div.className = 'video';
+        div.innerHTML = `
+          <img src="${video.snippet.thumbnails.medium.url}" width="100%" />
+          <p>${video.snippet.title}</p>
+        `;
+        div.onclick = () => {
+          document.getElementById('player').src = `https://www.youtube.com/embed/${video.id.videoId}?autoplay=1`;
+        };
+        results.appendChild(div);
+      });
+    }
+
+    // Автопоиск при загрузке
+    window.onload = searchLive;
+  </script>
 
 </body>
 </html>
