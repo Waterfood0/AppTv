@@ -1,85 +1,170 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Shorts Лента</title>
-<style>
-  body {
-    margin: 0; padding: 0;
-    background: #0d0d0d;
-    color: #00ff88;
-    font-family: Arial, sans-serif;
-    overflow-x: hidden;
-  }
-  .shorts-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .short {
-    width: 100%;
-    max-width: 400px;
-    height: 100vh;
-    margin-bottom: 10px;
-    position: relative;
-  }
-  iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 10px;
-  }
-  h1 {
-    text-align: center;
-    padding: 15px 0;
-    margin: 0;
-    background: #111;
-    color: #00ff88;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🔥 Shorts Stream</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #0d0d0d;
+      color: #ff4444;
+      font-family: 'Segoe UI', sans-serif;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      text-align: center;
+      padding: 16px;
+      font-size: 24px;
+      background: #111;
+      margin: 0;
+      color: #ff4444;
+    }
+
+    .shorts-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .short {
+      width: 100%;
+      max-width: 400px;
+      height: 100vh;
+      margin-bottom: 10px;
+      position: relative;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: none;
+    }
+
+    .loader {
+      text-align: center;
+      color: #888;
+      padding: 20px;
+    }
+
+    .preload {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: #0d0d0d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ff4444;
+      font-size: 20px;
+      z-index: 1;
+    }
+  </style>
 </head>
 <body>
 
-<h1>🔥 Авто Shorts Лента</h1>
-<div id="shorts" class="shorts-container"></div>
+  <h1>🔥 Shorts Stream</h1>
+  <div id="shorts" class="shorts-container"></div>
+  <div class="loader" id="loader">Загрузка...</div>
 
-<script>
-const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A'; // твой ключ
-const maxResults = 5; // сколько видео за раз
-let nextPageToken = '';
-const container = document.getElementById('shorts');
+  <script>
+    const API_KEY = 'AIzaSyDhAKMDqX2G0TNwl3Czk1Dkt89cR2E4e_A';
+    const container = document.getElementById('shorts');
+    const loader = document.getElementById('loader');
+    let nextPageToken = '';
+    let loading = false;
 
-async function loadShorts() {
-  let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=shorts&maxResults=${maxResults}&key=${API_KEY}`;
-  if (nextPageToken) {
-    url += `&pageToken=${nextPageToken}`;
-  }
-  const res = await fetch(url);
-  const data = await res.json();
-  nextPageToken = data.nextPageToken;
+    async function loadShorts() {
+      if (loading) return;
+      loading = true;
+      loader.textContent = 'Загрузка...';
 
-  data.items.forEach(item => {
-    const videoId = item.id.videoId;
-    const shortDiv = document.createElement('div');
-    shortDiv.className = 'short';
-    shortDiv.innerHTML = `
-      <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=0&mute=1&playsinline=1&modestbranding=1&rel=0&loop=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    `;
-    container.appendChild(shortDiv);
-  });
-}
+      let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=6&q=shorts&key=${API_KEY}`;
+      if (nextPageToken) url += `&pageToken=${nextPageToken}`;
 
-// Загрузка новых видео при прокрутке вниз
-window.addEventListener('scroll', () => {
-  if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
+      const res = await fetch(url);
+      const data = await res.json();
+      nextPageToken = data.nextPageToken;
+
+      data.items.forEach((item, index) => {
+        const videoId = item.id.videoId;
+        const shortDiv = document.createElement('div');
+        shortDiv.className = 'short';
+
+        const preload = document.createElement('div');
+        preload.className = 'preload';
+        preload.innerText = '⏳ Загрузка...';
+
+        const iframe = document.createElement('iframe');
+        const iframeId = `yt-player-${videoId}-${index}`;
+        iframe.id = iframeId;
+        iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&rel=0&controls=0&playsinline=1&modestbranding=1&autoplay=0&mute=0`;
+        iframe.allow = "autoplay; encrypted-media";
+        iframe.allowFullscreen = true;
+
+        shortDiv.appendChild(preload);
+        shortDiv.appendChild(iframe);
+        container.appendChild(shortDiv);
+      });
+
+      loader.textContent = 'Прокрутите вниз для загрузки ещё';
+      loading = false;
+
+      setTimeout(enableAutoPlay, 1000);
+    }
+
+    window.addEventListener('scroll', () => {
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
+        loadShorts();
+      }
+    });
+
+    // Автоплей + размут
+    function enableAutoPlay() {
+      const iframes = document.querySelectorAll('iframe');
+      const playerMap = new Map();
+
+      iframes.forEach((iframe, i) => {
+        const id = iframe.id;
+        playerMap.set(id, new YT.Player(id, {
+          events: {
+            'onReady': (event) => {
+              const preload = iframe.previousElementSibling;
+              if (preload) preload.style.display = 'none';
+              iframe.style.display = 'block';
+            }
+          }
+        }));
+      });
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const player = playerMap.get(entry.target.id);
+          if (!player) return;
+          if (entry.isIntersecting) {
+            player.unMute();
+            player.playVideo();
+          } else {
+            player.pauseVideo();
+          }
+        });
+      }, { threshold: 0.8 });
+
+      iframes.forEach(iframe => observer.observe(iframe));
+    }
+
+    // Загрузка YouTube API
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.body.appendChild(tag);
+
     loadShorts();
-  }
-});
-
-// Первая загрузка
-loadShorts();
-</script>
+  </script>
 
 </body>
 </html>
