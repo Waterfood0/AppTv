@@ -22,23 +22,32 @@
 
     .video-container {
       position: relative;
-      height: 100vh;
+      height: 90vh;
+      max-height: 600px;
+      margin: 20px auto;
       scroll-snap-align: start;
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 90vw;
+      max-width: 400px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 0 20px #ff0000cc;
+      background: #111;
     }
 
     iframe {
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       border: none;
+      border-radius: 20px;
     }
 
     .overlay {
       position: absolute;
-      right: 20px;
-      bottom: 80px;
+      right: 15px;
+      bottom: 15px;
       display: flex;
       flex-direction: column;
       gap: 15px;
@@ -53,7 +62,13 @@
       color: white;
       font-size: 18px;
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: transform 0.2s, background 0.2s;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
     }
 
     .overlay button:hover {
@@ -87,9 +102,8 @@ const FEED = document.getElementById('feed');
 let playerIframes = [];
 
 async function loadVideos() {
-  const randomStart = Math.floor(Math.random() * 50);
   const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=10&q=shorts&relevanceLanguage=ru&regionCode=RU&order=date&pageToken=&key=${API_KEY}`
+    `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=short&maxResults=10&q=shorts russian&relevanceLanguage=ru&regionCode=RU&order=date&key=${API_KEY}`
   );
   const data = await res.json();
   let videos = data.items.map(item => item.id.videoId);
@@ -105,9 +119,9 @@ async function loadVideos() {
     container.innerHTML = `
       <iframe id="v${i}" src="https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&enablejsapi=1&rel=0&loop=1&playlist=${id}" allow="autoplay; encrypted-media"></iframe>
       <div class="overlay">
-        <button onclick="like()">❤️</button>
-        <button onclick="replay(${i})">🔁</button>
-        <button onclick="copyLink('${id}')">🔗</button>
+        <button title="Лайк" onclick="like()">❤️</button>
+        <button title="Повтор" onclick="replay(${i})">🔁</button>
+        <button title="Копировать ссылку" onclick="copyLink('${id}')">🔗</button>
       </div>
     `;
     FEED.appendChild(container);
